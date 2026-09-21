@@ -901,7 +901,7 @@ function buildCatalogueCard(p, index) {
 
   const imgHtml = p.image
     ? `<img src="${_esc(p.image)}" alt="${_esc(p.name)}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="brocImgFallback(this,'${_esc(p.category||'')}')">`
-    : brocPlaceholderHTML(p.category);
+    : brocPlaceholderHTML(p.category, false, p.name);
 
   const badgeHtml = p.badge ? `<span class="pc-badge ${_esc(p.badge.toLowerCase())}">${_esc(p.badge.toUpperCase())}</span>` : '';
   const stockBadge = outOfStock
@@ -962,7 +962,7 @@ function renderDetail(p, index) {
   const imgPanel = document.getElementById('pdmImgPanel');
   imgPanel.innerHTML = p.image
     ? `<img src="${_esc(p.image)}" alt="${_esc(p.name)}" loading="lazy" onerror="brocImgFallback(this,'${_esc(p.category||'')}')">`
-    : brocPlaceholderHTML(p.category);
+    : brocPlaceholderHTML(p.category, false, p.name);
 
   if (p.badge) imgPanel.insertAdjacentHTML('afterbegin', `<div class="pdm-badge ${_esc(p.badge.toLowerCase())}">${_esc(p.badge.toUpperCase())}</div>`);
 

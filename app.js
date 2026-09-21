@@ -277,6 +277,7 @@ const CartUI = {
 .bcd-item:hover{background:rgba(90,90,90,.04);}
 
 .bcd-thumb{
+  position:relative;
   width:56px;height:56px;min-width:56px;
   background:rgba(226,226,226,.04);
   border:1px solid rgba(90,90,90,.12);
@@ -606,7 +607,7 @@ const CartUI = {
   _item(item) {
     const thumb = item.image
       ? `<img src="${_e(item.image)}" alt="${_e(item.name)}" loading="lazy" onerror="brocImgFallback(this,'${_e(item.category||'')}',true)">`
-      : brocPlaceholderHTML(item.category, true);
+      : brocPlaceholderHTML(item.category, true, item.name);
     return `
       <div class="bcd-item">
         <div class="bcd-thumb">${thumb}</div>
@@ -927,46 +928,298 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ═══════════════════════════════════════════════════════════════
    PRODUCT IMAGE PLACEHOLDER
-   Shown whenever a product has no image yet, or its image URL
-   fails to load. Picks an icon/label that matches the product's
-   category so it still looks intentional, not like a broken page.
+   Shown whenever a product has no photo yet, or its image URL
+   fails to load. Instead of a generic icon it draws a studio-style
+   illustration of the kind of item being sold (a cup hinge, a bar
+   handle, a padlock, a drawer runner, an LED downlight ...).
+
+   The item is chosen from the product NAME first ("Soft-Close Cup
+   Hinge" -> hinge, "Brass Knob" -> knob) and falls back to the
+   CATEGORY, so it still works when names are unusual.
+
+   Usage:  brocPlaceholderHTML(category, compact, name)
+           <img alt="Name" onerror="brocImgFallback(this,'hinges')">
 ═══════════════════════════════════════════════════════════════ */
-const BROC_PLACEHOLDER_ICONS = {
-  hinges:  '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/><circle cx="12" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
-  handles: '<rect x="3" y="10" width="14" height="4" rx="2"/><circle cx="19" cy="12" r="2"/>',
-  locks:   '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
-  drawers: '<rect x="3" y="6" width="18" height="12" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/>',
-  kitchen: '<rect x="4" y="3" width="16" height="18" rx="1"/><line x1="4" y1="10" x2="20" y2="10"/><circle cx="17" cy="6.5" r=".6" fill="currentColor" stroke="none"/><circle cx="17" cy="14.5" r=".6" fill="currentColor" stroke="none"/>',
-  default: '<path d="M3 17l6-6M3 10l10-10M9 21l10-10"/>'
-};
-const BROC_PLACEHOLDER_LABELS = {
-  hinges: 'Hinge', handles: 'Handle', locks: 'Lock', drawers: 'Drawer Runner', kitchen: 'Fitting', default: 'Image Coming Soon'
+let _brocPhSeq = 0;
+
+/* Category slug (incl. legacy aliases) -> default illustration */
+const BROC_PH_CAT_DEFAULT = {
+  hinges: 'hinge',   hinge: 'hinge',
+  handles: 'handle', handle: 'handle', knobs: 'knob',
+  drawers: 'runner', drawer: 'runner',
+  locks: 'padlock',  lock: 'padlock',   security: 'padlock',
+  kitchen: 'basket',
+  lighting: 'light', lights: 'light',
+  construction: 'bracket',
+  closet: 'rail',    wardrobe: 'rail',
+  tools: 'screwdriver', fixings: 'bolt',
+  boards: 'boards',  edging: 'edging'
 };
 
-function brocPlaceholderHTML(category, compact) {
-  const cat   = (category || '').toLowerCase().trim();
-  const icon  = BROC_PLACEHOLDER_ICONS[cat]  || BROC_PLACEHOLDER_ICONS.default;
-  const label = BROC_PLACEHOLDER_LABELS[cat] || BROC_PLACEHOLDER_LABELS.default;
+/* Product-name keywords, checked in order (most specific first) */
+const BROC_PH_NAME_RULES = [
+  [/padlock|shackle/i,                                   'padlock'],
+  [/cam\s*lock|cabinet lock|cupboard lock|drawer lock|locker/i, 'camlock'],
+  [/mortice|mortise|deadbolt|dead\s*bolt|lock\s*set|door lock|rim lock|latch|cylinder|sash\s*lock/i, 'doorlock'],
+  [/\block\b|\blocks\b/i,                                'padlock'],
+  [/butt hinge|door hinge|piano|flag hinge|strap hinge|t-hinge|gate hinge|ball bearing hinge/i, 'butthinge'],
+  [/hinge/i,                                             'hinge'],
+  [/knob/i,                                              'knob'],
+  [/lever|door handle|entrance handle|passage/i,         'lever'],
+  [/basket|pull-?\s?out|carousel|\bbin\b/i,                'basket'],
+  [/handle|\bpull\b|d-handle|bar pull/i,                 'handle'],
+  [/runner|slide|drawer|tandem|undermount/i,             'runner'],
+  [/wardrobe|hanging rail|closet|rail\b|tube/i,          'rail'],
+  [/\bled\b|light|lamp|downlight|spot\b|strip/i,         'light'],
+  [/edging|edge\s*band|edge tape|banding/i,              'edging'],
+  [/screwdriver|driver|drill|tool|spanner|wrench|plier/i,'screwdriver'],
+  [/screw|bolt|\bnuts?\b|washer|fixing|fastener|dowel/i, 'bolt'],
+  [/board|panel|melamine|\bmdf\b|chipboard|plywood|sheet|laminate/i, 'boards'],
+  [/bracket|angle|brace|corner|shelf support/i,          'bracket'],
+  [/\bwire\b/i,                                         'basket']
+];
+
+function brocPlaceholderType(category, name) {
+  const n = String(name || '');
+  for (const [re, type] of BROC_PH_NAME_RULES) if (re.test(n)) return type;
+  const c = String(category || '').toLowerCase().trim().replace(/[\s&]+/g, '_');
+  if (BROC_PH_CAT_DEFAULT[c]) return BROC_PH_CAT_DEFAULT[c];
+  for (const k in BROC_PH_CAT_DEFAULT) if (c.indexOf(k) === 0) return BROC_PH_CAT_DEFAULT[k];
+  return 'bolt';
+}
+
+/* Each drawer returns SVG markup on a 240 x 200 canvas.
+   f = fill references (shared metal gradients); E = soft outline. */
+const BROC_PH_DRAW = {
+  hinge: f => `
+    <rect x="176" y="66" width="36" height="68" rx="5" fill="${f.s}" ${f.E}/>
+    <circle cx="194" cy="80" r="4.5" fill="#4b4f55"/><circle cx="194" cy="120" r="4.5" fill="#4b4f55"/>
+    <rect x="186" y="94" width="16" height="12" rx="2" fill="${f.v}" ${f.E}/>
+    <rect x="112" y="91" width="78" height="18" rx="9" fill="${f.v}" ${f.E}/>
+    <line x1="122" y1="96" x2="182" y2="96" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="190" cy="100" r="6" fill="${f.r}" ${f.E}/>
+    <rect x="30" y="54" width="88" height="92" rx="9" fill="${f.s}" ${f.E}/>
+    <circle cx="74" cy="100" r="28" fill="${f.r}" ${f.E}/>
+    <circle cx="74" cy="100" r="21" fill="#a3a9b1" stroke="#7d838c" stroke-opacity=".6"/>
+    <circle cx="74" cy="100" r="15" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.5"/>
+    <circle cx="74" cy="62" r="5" fill="${f.r}" ${f.E}/><line x1="70.5" y1="62" x2="77.5" y2="62" stroke="#5a6068" stroke-width="1.6"/>
+    <circle cx="74" cy="138" r="5" fill="${f.r}" ${f.E}/><line x1="70.5" y1="138" x2="77.5" y2="138" stroke="#5a6068" stroke-width="1.6"/>`,
+
+  butthinge: f => `
+    <rect x="42" y="52" width="74" height="96" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="124" y="52" width="74" height="96" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="110" y="48" width="20" height="104" rx="5" fill="${f.s2}" ${f.E}/>
+    <line x1="110" y1="76" x2="130" y2="76" stroke="#6b717a" stroke-opacity=".7"/>
+    <line x1="110" y1="100" x2="130" y2="100" stroke="#6b717a" stroke-opacity=".7"/>
+    <line x1="110" y1="124" x2="130" y2="124" stroke="#6b717a" stroke-opacity=".7"/>
+    ${[72, 100, 128].map(y => `
+    <circle cx="72" cy="${y}" r="6.5" fill="#c9ced5" stroke="#7d838c" stroke-opacity=".6"/><circle cx="72" cy="${y}" r="3.6" fill="#4b4f55"/>
+    <circle cx="168" cy="${y}" r="6.5" fill="#c9ced5" stroke="#7d838c" stroke-opacity=".6"/><circle cx="168" cy="${y}" r="3.6" fill="#4b4f55"/>`).join('')}`,
+
+  handle: f => `
+    <g transform="translate(0,8)">
+      <rect x="56" y="88" width="12" height="36" fill="${f.s}" ${f.E}/>
+      <rect x="172" y="88" width="12" height="36" fill="${f.s}" ${f.E}/>
+      <rect x="49" y="122" width="26" height="9" rx="2" fill="${f.v}" ${f.E}/>
+      <rect x="165" y="122" width="26" height="9" rx="2" fill="${f.v}" ${f.E}/>
+      <rect x="36" y="72" width="168" height="18" rx="9" fill="${f.v}" ${f.E}/>
+      <line x1="50" y1="77" x2="190" y2="77" stroke="#fff" stroke-opacity=".75" stroke-width="2.2" stroke-linecap="round"/>
+    </g>`,
+
+  knob: f => `
+    <ellipse cx="120" cy="134" rx="34" ry="7" fill="${f.v}" ${f.E}/>
+    <rect x="111" y="104" width="18" height="30" fill="${f.s}" ${f.E}/>
+    <circle cx="120" cy="82" r="38" fill="${f.r}" ${f.E}/>
+    <circle cx="120" cy="82" r="30" fill="none" stroke="#fff" stroke-opacity=".35"/>
+    <ellipse cx="106" cy="66" rx="14" ry="8" fill="#fff" fill-opacity=".6" transform="rotate(-32 106 66)"/>`,
+
+  lever: f => `
+    <rect x="66" y="90" width="128" height="20" rx="10" fill="${f.v}" ${f.E}/>
+    <line x1="88" y1="95" x2="184" y2="95" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="72" cy="100" r="34" fill="${f.r}" ${f.E}/>
+    <circle cx="72" cy="100" r="25" fill="none" stroke="#fff" stroke-opacity=".4"/>
+    <circle cx="72" cy="100" r="11" fill="${f.r}" ${f.E}/>`,
+
+  runner: f => `
+    <rect x="18" y="72" width="204" height="28" rx="3" fill="${f.v}" ${f.E}/>
+    ${[38, 88, 138, 188].map(x => `<rect x="${x}" y="82" width="24" height="7" rx="3.5" fill="#4b4f55" fill-opacity=".85"/>`).join('')}
+    <rect x="36" y="99" width="170" height="6" rx="1" fill="#2f3237"/>
+    ${Array.from({ length: 9 }, (_, i) => `<circle cx="${46 + i * 18.5}" cy="102" r="3.7" fill="${f.r}"/>`).join('')}
+    <rect x="34" y="104" width="172" height="24" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="204" y="100" width="9" height="34" rx="2" fill="${f.v}" ${f.E}/>
+    ${[62, 112, 162].map(x => `<circle cx="${x}" cy="116" r="3.2" fill="#4b4f55" fill-opacity=".8"/>`).join('')}`,
+
+  padlock: f => `
+    <path d="M92 98 V70 a28 28 0 0 1 56 0 V98" fill="none" stroke="#9aa0a9" stroke-width="12"/>
+    <path d="M92 98 V70 a28 28 0 0 1 56 0 V98" fill="none" stroke="#f3f5f7" stroke-width="3.5" stroke-opacity=".9"/>
+    <rect x="66" y="94" width="108" height="76" rx="12" fill="${f.s}" ${f.E}/>
+    <rect x="75" y="102" width="90" height="60" rx="8" fill="none" stroke="#fff" stroke-opacity=".55"/>
+    <circle cx="120" cy="124" r="8.5" fill="#33363b"/>
+    <path d="M116 130 L124 130 L127.5 150 L112.5 150 Z" fill="#33363b"/>
+    <circle cx="82" cy="114" r="2.6" fill="#6b717a"/><circle cx="158" cy="114" r="2.6" fill="#6b717a"/>`,
+
+  camlock: f => `
+    <circle cx="100" cy="90" r="40" fill="${f.r}" ${f.E}/>
+    <circle cx="100" cy="90" r="31" fill="${f.s}" ${f.E}/>
+    <circle cx="100" cy="90" r="24" fill="none" stroke="#fff" stroke-opacity=".5"/>
+    <rect x="95.5" y="70" width="9" height="40" rx="4.5" fill="#2f3237"/>
+    <circle cx="100" cy="90" r="6.5" fill="#43474d"/>
+    <circle cx="176" cy="150" r="9" fill="none" stroke="#a6acb5" stroke-width="5" ${f.E}/>
+    <rect x="184" y="147" width="36" height="6.5" rx="1.5" fill="${f.v}" ${f.E}/>
+    <rect x="204" y="152" width="5" height="6" fill="${f.v}"/><rect x="213" y="152" width="5" height="9" fill="${f.v}"/>`,
+
+  doorlock: f => `
+    <rect x="164" y="52" width="14" height="100" rx="2" fill="${f.v}" ${f.E}/>
+    <rect x="178" y="66" width="24" height="20" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="178" y="112" width="24" height="20" rx="3" fill="${f.v}" ${f.E}/>
+    <circle cx="171" cy="60" r="2.8" fill="#4b4f55"/><circle cx="171" cy="144" r="2.8" fill="#4b4f55"/>
+    <rect x="44" y="52" width="122" height="100" rx="5" fill="${f.s}" ${f.E}/>
+    <rect x="54" y="62" width="102" height="80" rx="3" fill="none" stroke="#fff" stroke-opacity=".5"/>
+    <circle cx="96" cy="88" r="8" fill="#33363b"/>
+    <path d="M92.5 93 L99.5 93 L102 110 L90 110 Z" fill="#33363b"/>
+    <circle cx="128" cy="118" r="12" fill="${f.r}" ${f.E}/><rect x="124.5" y="112" width="7" height="12" fill="#33363b"/>`,
+
+  basket: f => `
+    <rect x="34" y="88" width="9" height="22" rx="2" fill="${f.s}" ${f.E}/>
+    <rect x="197" y="88" width="9" height="22" rx="2" fill="${f.s}" ${f.E}/>
+    ${[60, 74, 88, 102, 116, 130, 144, 158, 172, 186].map(x => `<line x1="${x}" y1="70" x2="${x}" y2="150" stroke="#c4c9d0" stroke-width="2.6"/>`).join('')}
+    ${[92, 114, 134].map(y => `<line x1="44" y1="${y}" x2="196" y2="${y}" stroke="#b3b9c1" stroke-width="2.6"/>`).join('')}
+    <rect x="42" y="66" width="156" height="86" rx="6" fill="none" stroke="#a9afb8" stroke-width="4.5"/>
+    <rect x="38" y="56" width="164" height="12" rx="6" fill="${f.v}" ${f.E}/>
+    <line x1="48" y1="60" x2="192" y2="60" stroke="#fff" stroke-opacity=".7" stroke-width="2" stroke-linecap="round"/>`,
+
+  light: f => `
+    <rect x="56" y="88" width="20" height="18" rx="2" fill="${f.v}" ${f.E}/>
+    <rect x="164" y="88" width="20" height="18" rx="2" fill="${f.v}" ${f.E}/>
+    <circle cx="120" cy="98" r="54" fill="${f.r}" ${f.E}/>
+    <circle cx="120" cy="98" r="45" fill="#d5d9de" stroke="#8f959e" stroke-opacity=".5"/>
+    <circle cx="120" cy="98" r="39" fill="${f.lens}"/>
+    ${Array.from({ length: 6 }, (_, i) => { const a = i * Math.PI / 3; return `<circle cx="${(120 + 21 * Math.cos(a)).toFixed(1)}" cy="${(98 + 21 * Math.sin(a)).toFixed(1)}" r="3" fill="#fffdf0" stroke="#f0c94a" stroke-width=".8"/>`; }).join('')}
+    <circle cx="120" cy="98" r="5" fill="#fffdf0" stroke="#f0c94a" stroke-width=".8"/>`,
+
+  bracket: f => `
+    <path d="M62 42 H92 V126 H186 V158 H62 Z" fill="${f.s}" ${f.E}/>
+    <path d="M92 84 V126 H148 Z" fill="#c1c6cd" ${f.E}/>
+    <ellipse cx="77" cy="64" rx="5.5" ry="9" fill="#4b4f55"/><ellipse cx="77" cy="100" rx="5.5" ry="9" fill="#4b4f55"/>
+    <ellipse cx="116" cy="142" rx="9" ry="5.5" fill="#4b4f55"/><ellipse cx="160" cy="142" rx="9" ry="5.5" fill="#4b4f55"/>
+    <line x1="66" y1="46" x2="66" y2="150" stroke="#fff" stroke-opacity=".6" stroke-width="2"/>`,
+
+  rail: f => `
+    <rect x="52" y="93" width="136" height="14" rx="7" fill="${f.v}" ${f.E}/>
+    <line x1="60" y1="97" x2="180" y2="97" stroke="#fff" stroke-opacity=".75" stroke-width="2" stroke-linecap="round"/>
+    <rect x="28" y="66" width="16" height="68" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="196" y="66" width="16" height="68" rx="3" fill="${f.s}" ${f.E}/>
+    <rect x="44" y="86" width="18" height="28" rx="4" fill="${f.s2}" ${f.E}/>
+    <rect x="178" y="86" width="18" height="28" rx="4" fill="${f.s2}" ${f.E}/>
+    <circle cx="36" cy="76" r="3.2" fill="#4b4f55"/><circle cx="36" cy="124" r="3.2" fill="#4b4f55"/>
+    <circle cx="204" cy="76" r="3.2" fill="#4b4f55"/><circle cx="204" cy="124" r="3.2" fill="#4b4f55"/>`,
+
+  screwdriver: f => `
+    <g transform="rotate(-24 122 100)">
+      <rect x="28" y="84" width="76" height="32" rx="14" fill="${f.d}"/>
+      ${[44, 58, 72, 86].map(x => `<line x1="${x}" y1="88" x2="${x}" y2="112" stroke="#0d0e10" stroke-opacity=".7" stroke-width="3" stroke-linecap="round"/>`).join('')}
+      <line x1="38" y1="90" x2="96" y2="90" stroke="#9aa0a8" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+      <rect x="24" y="90" width="8" height="20" rx="3" fill="${f.v}" ${f.E}/>
+      <rect x="102" y="90" width="16" height="20" rx="3" fill="${f.v}" ${f.E}/>
+      <rect x="118" y="96.5" width="92" height="7" rx="3" fill="${f.v}" ${f.E}/>
+      <polygon points="208,96 226,98.5 226,101.5 208,104" fill="${f.v}" ${f.E}/>
+    </g>`,
+
+  bolt: f => `
+    <g transform="rotate(-16 122 100)">
+      <rect x="42" y="76" width="32" height="48" rx="3" fill="${f.v}" ${f.E}/>
+      <line x1="58" y1="76" x2="58" y2="124" stroke="#7d838c" stroke-opacity=".6"/>
+      <rect x="74" y="72" width="7" height="56" rx="2" fill="${f.s}" ${f.E}/>
+      <rect x="81" y="88" width="112" height="24" fill="${f.v}" ${f.E}/>
+      ${Array.from({ length: 13 }, (_, i) => `<line x1="${92 + i * 8}" y1="88" x2="${98 + i * 8}" y2="112" stroke="#7d838c" stroke-width="1.6" stroke-opacity=".8"/>`).join('')}
+      <polygon points="193,88 208,93 208,107 193,112" fill="${f.s}" ${f.E}/>
+    </g>`,
+
+  boards: f => {
+    const edge = (dy, l, r) => `
+      <polygon points="50,${70 + dy} 100,${84 + dy} 100,${96 + dy} 50,${82 + dy}" fill="${l}" stroke="#000" stroke-opacity=".12"/>
+      <polygon points="100,${84 + dy} 200,${62 + dy} 200,${74 + dy} 100,${96 + dy}" fill="${r}" stroke="#000" stroke-opacity=".12"/>`;
+    const top = (dy, fill) => `<polygon points="50,${70 + dy} 150,${48 + dy} 200,${62 + dy} 100,${84 + dy}" fill="${fill}" stroke="#000" stroke-opacity=".14"/>`;
+    const grain = [0.18, 0.36, 0.54, 0.72, 0.9].map(t => {
+      const x = 50 + 50 * t, y = 70 + 14 * t + 20;
+      return `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + 100).toFixed(1)}" y2="${(y - 22).toFixed(1)}" stroke="#b98d55" stroke-opacity=".55" stroke-width="1.2"/>`;
+    }).join('');
+    return `<g transform="translate(-4,0)">
+      ${edge(44, '#8b9098', '#6f747c')}${top(44, '#a3a8af')}
+      ${edge(32, '#f3f3f1', '#d9d9d5')}${top(32, '#fbfbf9')}
+      ${edge(20, '#d3ab72', '#b98f57')}${top(20, '#dfbd8b')}${grain}
+    </g>`;
+  },
+
+  edging: f => `
+    <rect x="96" y="150" width="118" height="8" rx="1.5" fill="#d3ad78" stroke="#a98554" stroke-opacity=".7"/>
+    <line x1="100" y1="152.5" x2="210" y2="152.5" stroke="#fff" stroke-opacity=".4"/>
+    <circle cx="96" cy="98" r="54" fill="#d3ad78" stroke="#a98554" stroke-opacity=".8"/>
+    <circle cx="96" cy="98" r="46" fill="none" stroke="#b98f5a" stroke-opacity=".6"/>
+    <circle cx="96" cy="98" r="38" fill="none" stroke="#b98f5a" stroke-opacity=".6"/>
+    <circle cx="96" cy="98" r="30" fill="none" stroke="#b98f5a" stroke-opacity=".6"/>
+    <circle cx="96" cy="98" r="22" fill="#c7b596" stroke="#9a8b72"/>
+    <circle cx="96" cy="98" r="11" fill="#f1f2f4" stroke="#9a8b72"/>
+    <path d="M56 78 A46 46 0 0 1 96 52" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="4" stroke-linecap="round"/>`
+};
+
+function _brocPhEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function brocPlaceholderSVG(type) {
+  const u = 'bph' + (++_brocPhSeq) + '-';
+  const draw = BROC_PH_DRAW[type] || BROC_PH_DRAW.bolt;
+  const f = {
+    s: `url(#${u}s)`, s2: `url(#${u}s2)`, v: `url(#${u}v)`, d: `url(#${u}d)`, r: `url(#${u}r)`,
+    lens: `url(#${u}lens)`,
+    E: 'stroke="#79808a" stroke-opacity=".55" stroke-width=".8"'
+  };
+  const glow = type === 'light'
+    ? `<circle cx="120" cy="98" r="86" fill="url(#${u}glow)"/>` : '';
+  return `<svg viewBox="8 26 224 150" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false" style="position:absolute;left:0;top:0;width:100%;height:100%;display:block;">
+    <defs>
+      <linearGradient id="${u}s" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fbfcfd"/><stop offset=".38" stop-color="#c7ccd3"/><stop offset=".58" stop-color="#eef0f3"/><stop offset="1" stop-color="#8e949d"/></linearGradient>
+      <linearGradient id="${u}s2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e9ecef"/><stop offset=".5" stop-color="#aab0b8"/><stop offset="1" stop-color="#d7dbe0"/></linearGradient>
+      <linearGradient id="${u}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdfe"/><stop offset=".32" stop-color="#d3d7dd"/><stop offset=".72" stop-color="#98a0a9"/><stop offset="1" stop-color="#e4e7eb"/></linearGradient>
+      <linearGradient id="${u}d" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5d6065"/><stop offset=".5" stop-color="#2b2d31"/><stop offset="1" stop-color="#17181a"/></linearGradient>
+      <radialGradient id="${u}r" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#d9dde2"/><stop offset="1" stop-color="#8a9099"/></radialGradient>
+      <radialGradient id="${u}lens" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#fff5cc"/><stop offset="1" stop-color="#ffe08a"/></radialGradient>
+      <radialGradient id="${u}glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe9a0" stop-opacity=".65"/><stop offset="1" stop-color="#ffe9a0" stop-opacity="0"/></radialGradient>
+      <filter id="${u}sh" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#1a1a1a" flood-opacity=".22"/></filter>
+    </defs>
+    ${glow}
+    <g filter="url(#${u}sh)">${draw(f)}</g>
+  </svg>`;
+}
+
+function brocPlaceholderHTML(category, compact, name) {
+  const type   = brocPlaceholderType(category, name);
+  const svg    = brocPlaceholderSVG(type);
+  const aria   = _brocPhEsc((name || 'Product') + ' — photo coming soon');
+  const bg     = 'radial-gradient(ellipse at 50% 38%,#ffffff 0%,#f3f4f6 58%,#e7e9ec 100%)';
   if (compact) {
-    return `<div class="broc-img-ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f6f6f6;color:#c0c0c0;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">${icon}</svg>
+    return `<div class="broc-img-ph broc-img-ph--compact" role="img" aria-label="${aria}" data-ph="${type}" style="position:absolute;inset:0;background:${bg};">
+      <div style="position:absolute;inset:2px;">${svg}</div>
     </div>`;
   }
-  return `<div class="broc-img-ph" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f6f6f6;color:#b0b0b0;">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">${icon}</svg>
-    <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;">${label}</span>
+  return `<div class="broc-img-ph" role="img" aria-label="${aria}" data-ph="${type}" style="position:absolute;inset:0;background:${bg};overflow:hidden;">
+    <div style="position:absolute;left:2%;right:2%;top:3%;bottom:24px;">${svg}</div>
+    <span style="position:absolute;left:0;right:0;bottom:9px;text-align:center;font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.6px;text-transform:uppercase;color:#a0a3a9;">Photo coming soon</span>
   </div>`;
 }
 
 /* Call from an <img onerror="brocImgFallback(this,'hinges')">
-   to swap a broken/inaccessible image URL for the placeholder live. */
+   to swap a broken/inaccessible image URL for the placeholder live.
+   The product name is read from the image's alt text. */
 function brocImgFallback(imgEl, category, compact) {
   if (!imgEl || imgEl.dataset.brocFallbackApplied) return;
   imgEl.dataset.brocFallbackApplied = '1';
   const wrap = document.createElement('div');
-  wrap.style.cssText = imgEl.style.cssText || 'position:absolute;inset:0;';
-  wrap.innerHTML = brocPlaceholderHTML(category, compact);
+  wrap.style.cssText = 'position:absolute;inset:0;';
+  wrap.innerHTML = brocPlaceholderHTML(category, compact, imgEl.alt);
   imgEl.replaceWith(wrap);
 }
 window.brocPlaceholderHTML = brocPlaceholderHTML;
+window.brocPlaceholderType = brocPlaceholderType;
 window.brocImgFallback     = brocImgFallback;

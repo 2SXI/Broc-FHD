@@ -602,7 +602,7 @@ function renderProduct(p) {
         <div class="pp-img-panel">
           ${p.image
             ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="brocImgFallback(this,'${esc(p.category||'')}')">`
-            : brocPlaceholderHTML(p.category)}
+            : brocPlaceholderHTML(p.category, false, p.name)}
           ${p.badge ? `<div class="pp-badge ${esc(p.badge.toLowerCase())}">${esc(p.badge.toUpperCase())}</div>` : ''}
           <div class="pp-stock-badge ${outOfStock ? 'pp-stock-out' : isLow ? 'pp-stock-low' : 'pp-stock-ok'}">
             ${outOfStock ? 'Out of Stock' : isLow ? `Low Stock — ${stock} left` : `In Stock`}
@@ -727,7 +727,7 @@ function buildRelatedCard(p) {
   const price = parseFloat(p.price || 0).toFixed(2);
   const img   = p.image
     ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="brocImgFallback(this,'${esc(p.category||'')}')">`
-    : brocPlaceholderHTML(p.category);
+    : brocPlaceholderHTML(p.category, false, p.name);
   return `
     <a href="product.html?id=${p.id}" style="display:block;text-decoration:none;color:inherit;" class="product-card">
       <div class="pc-img" style="position:relative;">${img}</div>

@@ -154,7 +154,7 @@ function buildProductCard(p) {
   const price    = parseFloat(p.price || 0).toFixed(2);
   const imgHtml  = p.image
     ? `<img src="${escSH(p.image)}" alt="${escSH(p.name)}" class="pc-img-photo" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="brocImgFallback(this,'${escSH(p.category||'')}')">`
-    : brocPlaceholderHTML(p.category);
+    : brocPlaceholderHTML(p.category, false, p.name);
   const outOfStock = (p.stock === 0);
 
   return `
