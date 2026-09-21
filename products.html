@@ -566,6 +566,14 @@ body{background:#f0f2f5;}
         <span class="csb-cat-left"><span class="csb-cat-dot"></span>Tools &amp; Fixings</span>
         <span class="csb-cat-count" id="cnt-tools">—</span>
       </button>
+      <button class="csb-cat" data-cat="boards" onclick="setCatFilter('boards',this)">
+        <span class="csb-cat-left"><span class="csb-cat-dot"></span>Boards &amp; Panels</span>
+        <span class="csb-cat-count" id="cnt-boards">—</span>
+      </button>
+      <button class="csb-cat" data-cat="edging" onclick="setCatFilter('edging',this)">
+        <span class="csb-cat-left"><span class="csb-cat-dot"></span>Edging</span>
+        <span class="csb-cat-count" id="cnt-edging">—</span>
+      </button>
     </div>
 
     <div class="csb-section">
@@ -1118,7 +1126,7 @@ function updateCounts(products) {
   const counts = {};
   products.forEach(p => { const c = (p.category||'').toLowerCase(); counts[c] = (counts[c]||0)+1; });
   document.getElementById('cnt-all').textContent = products.length;
-  ['hinges','handles','drawers','locks','kitchen','lighting','construction','closet','tools'].forEach(cat => {
+  ['hinges','handles','drawers','locks','kitchen','lighting','construction','closet','tools','boards','edging'].forEach(cat => {
     const el = document.getElementById('cnt-'+cat);
     if (el) el.textContent = counts[cat] || 0;
   });
@@ -1148,7 +1156,8 @@ function updateBreadcrumb() {
     all:'All Products', hinges:'Hinges & Pivot Systems', handles:'Handles & Knobs',
     drawers:'Drawer Systems', locks:'Locks & Security', kitchen:'Kitchen Fittings',
     lighting:'Lighting Hardware', construction:'Construction Hardware',
-    closet:'Closet Systems', tools:'Tools & Fixings'
+    closet:'Closet Systems', tools:'Tools & Fixings',
+    boards:'Boards & Panels', edging:'Edging'
   };
   document.getElementById('bc-cat').textContent = names[_activeCat] || 'All Products';
 }
