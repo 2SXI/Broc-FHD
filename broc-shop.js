@@ -469,7 +469,7 @@ const Cart = {
     const counter = document.getElementById('cartCount');
     if (counter) {
       counter.textContent = this.count;
-      counter.style.background = this.count > 0 ? '#e85d26' : 'rgba(255,255,255,0.25)';
+      counter.style.background = this.count > 0 ? '#fff' : 'rgba(255,255,255,0.25)';
     }
     // BUG FIX: Also override app.js's enquiryItems count display
     if (typeof updateCartUI === 'function') {
@@ -665,8 +665,8 @@ const Checkout = {
             </button>
           </div>
           <div id="broc-co-error" style="display:none;margin-top:12px;padding:10px 14px;
-            background:rgba(232,93,38,0.1);border:1px solid rgba(232,93,38,0.3);
-            font-size:12px;color:#e85d26;line-height:1.5;"></div>
+            background:rgba(193,57,43,0.1);border:1px solid rgba(193,57,43,0.3);
+            font-size:12px;color:#c1392b;line-height:1.5;"></div>
 
           <!-- PayPal container — hidden unless PayPal selected -->
           <div id="broc-paypal-container" style="display:none;margin-top:16px;"></div>
@@ -1081,7 +1081,7 @@ const PayPalIntegration = {
       this._renderButton();
     };
     script.onerror = () => {
-      if (container) container.innerHTML = `<div style="font-size:12px;color:#e85d26;padding:8px 0;">
+      if (container) container.innerHTML = `<div style="font-size:12px;color:#c1392b;padding:8px 0;">
         PayPal failed to load. <a href="https://wa.me/${SHOP.waNumber}" style="color:var(--steel,#5a5a5a);">Order via WhatsApp</a>
       </div>`;
     };

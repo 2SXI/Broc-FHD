@@ -14,7 +14,7 @@
   --steel:#5a5a5a;--steel-lt:#7a7a7a;
   --silver:#e2e2e2;--muted:#6a6a6a;--text:#1a1a1a;
   --gray-50:#f6f6f6;--gray-100:#ebebeb;--gray-200:#d8d8d8;
-  --green:#25D366;--orange:#e85d26;--red:#e84343;
+  --green:#25D366;--orange:#1a1a1a;--red:#e84343;
 }
 html{font-size:15px;}
 body{font-family:'Outfit',sans-serif;background:var(--gray-50);color:var(--text);min-height:100vh;}
@@ -32,7 +32,7 @@ table{border-collapse:collapse;width:100%;}
 .login-input:focus{border-color:var(--orange);}
 .login-btn{width:100%;padding:14px;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;letter-spacing:2px;text-transform:uppercase;transition:opacity .2s;margin-top:8px;}
 .login-btn:hover{opacity:.88;}
-.login-err{font-size:12px;color:var(--orange);margin-top:10px;display:none;}
+.login-err{font-size:12px;color:var(--red);margin-top:10px;display:none;}
 #admin-app{display:none;}
 .admin-wrap{display:grid;grid-template-columns:220px 1fr;min-height:100vh;}
 .sidebar{background:var(--navy-darker);border-right:1px solid rgba(90,90,90,.12);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:50;}
@@ -42,12 +42,12 @@ table{border-collapse:collapse;width:100%;}
 .sb-logo-sub{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:2px;color:rgba(226,226,226,.3);margin-top:2px;}
 .sb-nav{padding:16px 0;flex:1;}
 .sb-link{display:flex;align-items:center;gap:12px;padding:12px 20px;font-size:13px;font-weight:500;color:rgba(226,226,226,.5);border-left:3px solid transparent;transition:all .2s;cursor:pointer;user-select:none;}
-.sb-link:hover,.sb-link.active{color:var(--silver);border-left-color:var(--orange);background:rgba(232,93,38,.08);}
+.sb-link:hover,.sb-link.active{color:var(--silver);border-left-color:#fff;background:rgba(255,255,255,.06);}
 .sb-link svg{opacity:.55;flex-shrink:0;}
 .sb-link.active svg,.sb-link:hover svg{opacity:1;}
 .sb-bottom{padding:16px 20px;border-top:1px solid rgba(90,90,90,.12);}
-.sb-logout{width:100%;padding:10px;background:rgba(232,93,38,.12);border:1px solid rgba(232,93,38,.2);color:var(--orange);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;}
-.sb-logout:hover{background:rgba(232,93,38,.22);}
+.sb-logout{width:100%;padding:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#fff;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;transition:all .2s;}
+.sb-logout:hover{background:rgba(255,255,255,.16);}
 .sb-version{font-family:'DM Mono',monospace;font-size:8px;color:rgba(226,226,226,.12);margin-top:10px;text-align:center;letter-spacing:1px;}
 .main-area{overflow:auto;min-width:0;}
 .page-hdr{background:#fff;border-bottom:1px solid var(--gray-200);padding:20px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;gap:12px;flex-wrap:wrap;}
@@ -73,13 +73,13 @@ table tr:hover td{background:var(--gray-50);}
 .td-price{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--navy);}
 .td-sku{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);}
 .badge{display:inline-block;padding:3px 10px;font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;text-transform:uppercase;font-weight:500;}
-.badge-pending{background:rgba(232,93,38,.12);color:var(--orange);}
+.badge-pending{background:rgba(90,90,90,.12);color:var(--steel);}
 .badge-confirmed{background:rgba(90,90,90,.12);color:var(--steel);}
 .badge-shipped{background:rgba(37,211,102,.12);color:#1a8a44;}
 .badge-delivered{background:rgba(37,211,102,.2);color:#156b34;}
 .badge-cancelled{background:rgba(232,67,67,.12);color:var(--red);}
 .badge-trade{background:rgba(90,90,90,.18);color:var(--steel);}
-.badge-low{background:rgba(232,93,38,.12);color:var(--orange);}
+.badge-low{background:rgba(232,67,67,.12);color:var(--red);}
 .badge-ok{background:rgba(37,211,102,.1);color:#1a8a44;}
 .badge-out{background:rgba(232,67,67,.12);color:var(--red);}
 .badge-active{background:rgba(37,211,102,.1);color:#1a8a44;}
@@ -111,7 +111,7 @@ table tr:hover td{background:var(--gray-50);}
 .f-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .f-select{background:rgba(13,13,13,.9);cursor:pointer;color:var(--silver);}
 .f-select option{background:var(--navy-deep);color:var(--silver);}
-.f-error{font-size:11px;color:var(--orange);margin-top:6px;display:none;padding:8px 10px;background:rgba(232,93,38,.08);border:1px solid rgba(232,93,38,.2);}
+.f-error{font-size:11px;color:var(--red);margin-top:6px;display:none;padding:8px 10px;background:rgba(232,67,67,.08);border:1px solid rgba(232,67,67,.2);}
 .f-toggle-row{display:flex;align-items:center;gap:10px;padding:8px 0;}
 .f-toggle{position:relative;width:40px;height:22px;flex-shrink:0;}
 .f-toggle input{opacity:0;width:0;height:0;}
@@ -190,7 +190,7 @@ table tr:hover td{background:var(--gray-50);}
         <div class="sb-link" onclick="showSection('orders')" data-section="orders">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
           Orders
-          <span id="sb-pending-badge" style="margin-left:auto;background:var(--orange);color:#fff;font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;letter-spacing:1px;display:none;"></span>
+          <span id="sb-pending-badge" style="margin-left:auto;background:#fff;color:var(--charcoal);font-family:'DM Mono',monospace;font-size:8px;padding:2px 7px;letter-spacing:1px;display:none;"></span>
         </div>
         <div class="sb-link" onclick="showSection('enquiries')" data-section="enquiries">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -326,11 +326,11 @@ table tr:hover td{background:var(--gray-50);}
           <div id="bi-summary" style="display:none;margin-top:20px;padding:14px 18px;background:#fff;border:1px solid var(--gray-200);border-radius:4px;display:none;align-items:center;gap:20px;flex-wrap:wrap;font-size:12px;">
             <span><strong id="bi-count-total">0</strong> files</span>
             <span style="color:#1a8f4c;"><strong id="bi-count-matched">0</strong> matched</span>
-            <span style="color:var(--orange);"><strong id="bi-count-unmatched">0</strong> unmatched</span>
+            <span style="color:var(--steel);"><strong id="bi-count-unmatched">0</strong> unmatched</span>
             <span style="color:#1a8f4c;"><strong id="bi-count-done">0</strong> uploaded</span>
             <span style="color:var(--red);"><strong id="bi-count-error">0</strong> failed</span>
             <div style="flex:1;min-width:120px;height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;">
-              <div id="bi-progress-bar" style="height:100%;width:0%;background:var(--orange);transition:width .2s;"></div>
+              <div id="bi-progress-bar" style="height:100%;width:0%;background:var(--charcoal);transition:width .2s;"></div>
             </div>
             <span id="bi-progress-label" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">0%</span>
           </div>
@@ -744,7 +744,7 @@ async function loadProducts_Admin() {
     _allProducts = data || [];
     renderProductTable(_allProducts);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--orange);">Error: ${esc(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--red);">Error: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -953,7 +953,7 @@ async function loadOrders_Admin() {
     _allOrders = data || [];
     renderOrderTable(_allOrders);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color:var(--orange);">
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color:var(--red);">
       Error: ${esc(err.message)}
     </td></tr>`;
   }
@@ -1095,7 +1095,7 @@ async function loadEnquiries_Admin() {
     _allEnquiries = data || [];
     renderEnquiryTable(_allEnquiries);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--orange);">
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--red);">
       Error: ${esc(err.message)}
     </td></tr>`;
   }
@@ -1295,7 +1295,7 @@ function biInit() {
   zone.addEventListener('click', () => input.click());
   input.addEventListener('change', () => { const f = Array.from(input.files || []); input.value = ''; biAddFiles(f); });
   ['dragover','dragenter'].forEach(evt => zone.addEventListener(evt, e => {
-    e.preventDefault(); zone.style.borderColor = 'var(--orange)'; zone.style.background = 'rgba(232,93,38,.04)';
+    e.preventDefault(); zone.style.borderColor = 'var(--charcoal)'; zone.style.background = 'rgba(26,26,26,.04)';
   }));
   ['dragleave','drop'].forEach(evt => zone.addEventListener(evt, e => {
     e.preventDefault(); zone.style.borderColor = 'rgba(90,90,90,.3)'; zone.style.background = '#fff';
@@ -1357,7 +1357,7 @@ function biSelectStub(row) {
 function biStatusBadge(row) {
   const map = {
     matched:   ['#e8f5ee','#1a8f4c','Ready'],
-    unmatched: ['#fdeeea','var(--orange)','No match'],
+    unmatched: ['#f0f0f0','var(--steel)','No match'],
     uploading: ['#eef3fb','#2563eb','Uploading…'],
     done:      ['#e8f5ee','#1a8f4c','Uploaded'],
     error:     ['#fdeceb','var(--red)','Failed']

@@ -214,7 +214,7 @@ const CartUI = {
   letter-spacing:1.5px;color:#e2e2e2;white-space:nowrap;
 }
 .bcd-badge{
-  background:#e85d26;color:#fff;
+  background:#1a1a1a;color:#fff;
   font-family:'DM Mono',monospace;font-size:9px;font-weight:700;
   padding:2px 7px;letter-spacing:.5px;
   min-width:18px;text-align:center;
@@ -330,11 +330,11 @@ const CartUI = {
 .bcd-remove{
   background:none;border:none;
   font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;
-  text-transform:uppercase;color:rgba(232,93,38,.4);
+  text-transform:uppercase;color:rgba(255,255,255,.4);
   cursor:pointer;padding:0;transition:color .15s;
   touch-action:manipulation;
 }
-.bcd-remove:hover{color:#e85d26;}
+.bcd-remove:hover{color:#fff;}
 
 /* ── Footer ──────────────────────────────────────────────────── */
 .bcd-footer{
@@ -384,7 +384,7 @@ const CartUI = {
 /* Buttons */
 .bcd-checkout{
   width:100%;padding:14px 12px;
-  background:#e85d26;color:#fff;border:none;
+  background:#fff;color:#1a1a1a;border:none;
   font-family:'Barlow Condensed',sans-serif;
   font-size:14px;font-weight:900;letter-spacing:2px;text-transform:uppercase;
   cursor:pointer;transition:opacity .2s;
@@ -417,7 +417,7 @@ const CartUI = {
   transition:color .2s;
   touch-action:manipulation;
 }
-.bcd-clr:hover{color:rgba(232,93,38,.55);}
+.bcd-clr:hover{color:rgba(255,255,255,.55);}
 
 /* ── Cart count pop animation ────────────────────────────────── */
 @keyframes bcdPop{0%{transform:scale(1)}45%{transform:scale(1.4)}100%{transform:scale(1)}}
@@ -642,7 +642,7 @@ const CartUI = {
     if (!counter) return;
     const prev = parseInt(counter.textContent || '0', 10);
     counter.textContent = count;
-    counter.style.background = count > 0 ? '#e85d26' : 'rgba(255,255,255,0.25)';
+    counter.style.background = count > 0 ? '#fff' : 'rgba(255,255,255,0.25)';
     /* Pop animation when count increases */
     if (count > prev) {
       counter.classList.remove('bcd-count-pop');
