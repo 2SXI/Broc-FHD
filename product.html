@@ -601,8 +601,8 @@ function renderProduct(p) {
       <div>
         <div class="pp-img-panel">
           ${p.image
-            ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="this.parentElement.innerHTML='<div class=pp-img-placeholder><svg width=64 height=64 viewBox=&quot;0 0 24 24&quot; fill=none stroke=currentColor stroke-width=1><path d=&quot;M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z&quot;/></svg></div>'">`
-            : `<div class="pp-img-placeholder"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`}
+            ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" onerror="brocImgFallback(this,'${esc(p.category||'')}')">`
+            : brocPlaceholderHTML(p.category)}
           ${p.badge ? `<div class="pp-badge ${esc(p.badge.toLowerCase())}">${esc(p.badge.toUpperCase())}</div>` : ''}
           <div class="pp-stock-badge ${outOfStock ? 'pp-stock-out' : isLow ? 'pp-stock-low' : 'pp-stock-ok'}">
             ${outOfStock ? 'Out of Stock' : isLow ? `Low Stock — ${stock} left` : `In Stock`}
@@ -726,8 +726,8 @@ async function loadRelated(product) {
 function buildRelatedCard(p) {
   const price = parseFloat(p.price || 0).toFixed(2);
   const img   = p.image
-    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
-    : `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#d0d5dd;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`;
+    ? `<img src="${esc(p.image)}" alt="${esc(p.name)}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="brocImgFallback(this,'${esc(p.category||'')}')">`
+    : brocPlaceholderHTML(p.category);
   return `
     <a href="product.html?id=${p.id}" style="display:block;text-decoration:none;color:inherit;" class="product-card">
       <div class="pc-img" style="position:relative;">${img}</div>

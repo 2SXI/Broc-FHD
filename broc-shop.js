@@ -153,8 +153,8 @@ function buildProductCard(p) {
   const cat      = normaliseCat(p.category);
   const price    = parseFloat(p.price || 0).toFixed(2);
   const imgHtml  = p.image
-    ? `<img src="${escSH(p.image)}" alt="${escSH(p.name)}" class="pc-img-photo" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;">`
-    : `<div class="pc-img-icon" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.25"><circle cx="12" cy="12" r="4"/><path d="m12 2 1.5 3-1.5 1-1.5-1zm0 20-1.5-3 1.5-1 1.5 1zM2 12l3-1.5 1 1.5-1 1.5zm20 0-3 1.5-1-1.5 1-1.5z"/></svg></div>`;
+    ? `<img src="${escSH(p.image)}" alt="${escSH(p.name)}" class="pc-img-photo" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="brocImgFallback(this,'${escSH(p.category||'')}')">`
+    : brocPlaceholderHTML(p.category);
   const outOfStock = (p.stock === 0);
 
   return `

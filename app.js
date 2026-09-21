@@ -605,8 +605,8 @@ const CartUI = {
 
   _item(item) {
     const thumb = item.image
-      ? `<img src="${_e(item.image)}" alt="${_e(item.name)}" loading="lazy">`
-      : `<div class="bcd-thumb-ph"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".35"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>`;
+      ? `<img src="${_e(item.image)}" alt="${_e(item.name)}" loading="lazy" onerror="brocImgFallback(this,'${_e(item.category||'')}',true)">`
+      : brocPlaceholderHTML(item.category, true);
     return `
       <div class="bcd-item">
         <div class="bcd-thumb">${thumb}</div>
@@ -924,3 +924,49 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('%cBROC Fittings & Hardware', 'font-size:18px;font-weight:bold;color:#5a5a5a;');
   console.log('%cZimbabwe\'s Premier Hardware Supplier', 'color:#6a6a6a;');
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   PRODUCT IMAGE PLACEHOLDER
+   Shown whenever a product has no image yet, or its image URL
+   fails to load. Picks an icon/label that matches the product's
+   category so it still looks intentional, not like a broken page.
+═══════════════════════════════════════════════════════════════ */
+const BROC_PLACEHOLDER_ICONS = {
+  hinges:  '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/><circle cx="12" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1" fill="currentColor" stroke="none"/>',
+  handles: '<rect x="3" y="10" width="14" height="4" rx="2"/><circle cx="19" cy="12" r="2"/>',
+  locks:   '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  drawers: '<rect x="3" y="6" width="18" height="12" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/>',
+  kitchen: '<rect x="4" y="3" width="16" height="18" rx="1"/><line x1="4" y1="10" x2="20" y2="10"/><circle cx="17" cy="6.5" r=".6" fill="currentColor" stroke="none"/><circle cx="17" cy="14.5" r=".6" fill="currentColor" stroke="none"/>',
+  default: '<path d="M3 17l6-6M3 10l10-10M9 21l10-10"/>'
+};
+const BROC_PLACEHOLDER_LABELS = {
+  hinges: 'Hinge', handles: 'Handle', locks: 'Lock', drawers: 'Drawer Runner', kitchen: 'Fitting', default: 'Image Coming Soon'
+};
+
+function brocPlaceholderHTML(category, compact) {
+  const cat   = (category || '').toLowerCase().trim();
+  const icon  = BROC_PLACEHOLDER_ICONS[cat]  || BROC_PLACEHOLDER_ICONS.default;
+  const label = BROC_PLACEHOLDER_LABELS[cat] || BROC_PLACEHOLDER_LABELS.default;
+  if (compact) {
+    return `<div class="broc-img-ph" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#f6f6f6;color:#c0c0c0;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">${icon}</svg>
+    </div>`;
+  }
+  return `<div class="broc-img-ph" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#f6f6f6;color:#b0b0b0;">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3">${icon}</svg>
+    <span style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;">${label}</span>
+  </div>`;
+}
+
+/* Call from an <img onerror="brocImgFallback(this,'hinges')">
+   to swap a broken/inaccessible image URL for the placeholder live. */
+function brocImgFallback(imgEl, category, compact) {
+  if (!imgEl || imgEl.dataset.brocFallbackApplied) return;
+  imgEl.dataset.brocFallbackApplied = '1';
+  const wrap = document.createElement('div');
+  wrap.style.cssText = imgEl.style.cssText || 'position:absolute;inset:0;';
+  wrap.innerHTML = brocPlaceholderHTML(category, compact);
+  imgEl.replaceWith(wrap);
+}
+window.brocPlaceholderHTML = brocPlaceholderHTML;
+window.brocImgFallback     = brocImgFallback;
