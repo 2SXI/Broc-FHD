@@ -190,14 +190,14 @@ const CartUI = {
   height:100%;height:100dvh;
   background:#0d0d0d;
   border-left:1px solid rgba(90,90,90,.22);
-  box-shadow:-16px 0 56px rgba(0,0,0,.4);
+  box-shadow:none;
   z-index:1099;
   display:flex;flex-direction:column;
   transform:translateX(100%);
   transition:transform .32s cubic-bezier(.4,0,.2,1);
   will-change:transform;
 }
-#brocCartDrawer.bcd-open{transform:translateX(0);}
+#brocCartDrawer.bcd-open{transform:translateX(0);box-shadow:-16px 0 56px rgba(0,0,0,.4);}
 
 /* ── Header ──────────────────────────────────────────────────── */
 .bcd-hdr{
