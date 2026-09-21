@@ -320,7 +320,7 @@ async function loadProducts() {
       CartUI.syncCount();
     }
 
-    console.log(`[BROC] Loaded ${products.length} featured products from Supabase`);
+
 
   } catch (err) {
     console.error('[BROC] Product load failed:', err);
@@ -1233,5 +1233,5 @@ document.addEventListener('DOMContentLoaded', () => {
     history.replaceState(null, '', window.location.pathname);
   }
 
-  console.log('[BROC Shop v2.1] Cart + featured products loaded ✓');
+  
 });

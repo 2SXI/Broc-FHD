@@ -30,7 +30,11 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="favicon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
@@ -273,14 +277,19 @@
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
       brockinteriordesigns@gmail.com
     </a>
+    <span class="tb-sep">·</span>
+    <a href="https://wa.me/263780793585" class="topbar-link topbar-wa" style="display:inline-flex;align-items:center;gap:5px;">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347"/></svg>
+      WhatsApp
+    </a>
   </div>
 </div>
 
 <!-- ── NAV ──────────────────────────────────── -->
-<nav id="mainNav">
+<nav id="mainNav" aria-label="Main navigation">
   <div class="nav-inner">
     <a href="index.html" class="nav-brand" aria-label="BROC Fittings Home">
-      <img src="broc-logo-nav.png" alt="BROC Fittings" class="nav-logo-img">
+      <img src="broc-logo-nav.png" alt="BROC Fittings Handles &amp; Hardware logo" class="nav-logo-img">
     </a>
     <ul class="nav-menu" id="navMenu">
       <li><a href="about.html" class="nav-link">About</a></li>
@@ -290,6 +299,9 @@
       <li><a href="contact.html" class="nav-link">Contact</a></li>
     </ul>
     <div class="nav-actions">
+      <button class="nav-search-btn" id="searchToggle" aria-label="Search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
       <button class="nav-cart" id="cartBtn" aria-label="View cart">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Cart
@@ -302,6 +314,22 @@
       <button class="nav-hamburger" id="navHamburger" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
+    </div>
+  </div>
+
+  <!-- Search Overlay -->
+  <div class="nav-search-overlay" id="searchOverlay">
+    <div class="search-inner">
+      <input type="text" class="search-input" id="searchInput" placeholder="Search products, categories, SKUs..." autocomplete="off">
+      <button class="search-submit" aria-label="Search" onclick="location.href='products.html'">→</button>
+    </div>
+    <div class="search-suggestions">
+      <span class="ss-label">Popular searches:</span>
+      <a href="products.html?cat=hinges" class="ss-tag">Hinges</a>
+      <a href="products.html?cat=handles" class="ss-tag">Handles</a>
+      <a href="products.html?cat=drawers" class="ss-tag">Soft Close</a>
+      <a href="products.html?cat=locks" class="ss-tag">Locks</a>
+      <a href="products.html?cat=drawers" class="ss-tag">Drawer Runners</a>
     </div>
   </div>
 </nav>

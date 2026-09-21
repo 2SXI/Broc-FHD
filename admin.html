@@ -153,12 +153,12 @@ table tr:hover td{background:var(--gray-50);}
   <div class="login-box">
     <img src="broc-logo-nav.png" alt="BROC Fittings" class="login-logo-img">
     <div class="login-sub">Product &amp; Order Management</div>
-    <label class="login-label" for="adm-user">Username</label>
-    <input id="adm-user" type="text" class="login-input" placeholder="admin" autocomplete="username">
+    <label class="login-label" for="adm-user">Email</label>
+    <input id="adm-user" type="email" class="login-input" placeholder="you@brocfittings.com" autocomplete="username">
     <label class="login-label" for="adm-pass">Password</label>
     <input id="adm-pass" type="password" class="login-input" placeholder="&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;&#x2022;" autocomplete="current-password">
-    <button class="login-btn" onclick="adminLogin()">Sign In &rarr;</button>
-    <div class="login-err" id="login-err">Incorrect credentials.</div>
+    <button class="login-btn" id="login-btn" onclick="adminLogin()">Sign In &rarr;</button>
+    <div class="login-err" id="login-err">Incorrect email or password.</div>
   </div>
 </div>
 
@@ -182,6 +182,10 @@ table tr:hover td{background:var(--gray-50);}
         <div class="sb-link" onclick="showSection('products')" data-section="products">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>
           Products
+        </div>
+        <div class="sb-link" onclick="showSection('bulk-images')" data-section="bulk-images">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          Bulk Images
         </div>
         <div class="sb-link" onclick="showSection('orders')" data-section="orders">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -290,7 +294,59 @@ table tr:hover td{background:var(--gray-50);}
         </div>
       </div>
 
-      <!-- ORDERS -->
+      <!-- BULK IMAGES -->
+      <div id="section-bulk-images" class="section">
+        <div class="page-hdr">
+          <div class="page-hdr-left">
+            <button class="mob-menu-btn" onclick="openSidebar()" aria-label="Menu">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div><div class="page-title">Bulk Image Upload</div><div class="page-subtitle">Match filenames to products &middot; Upload to Supabase Storage</div></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-edit btn-sm" id="bi-rematch-btn" onclick="biRematchAll()" style="display:none;">Re-match</button>
+            <button class="btn btn-primary" id="bi-upload-btn" onclick="biStartUpload()" style="display:none;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Upload All Matched
+            </button>
+          </div>
+        </div>
+
+        <div style="padding:28px 32px;">
+
+          <!-- DROP ZONE -->
+          <div id="bi-dropzone" style="border:2px dashed rgba(90,90,90,.3);border-radius:4px;padding:40px 20px;text-align:center;cursor:pointer;background:#fff;transition:all .2s;">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" style="margin-bottom:10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;">Drop up to 200 images here, or click to browse</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px;">Filenames are auto-matched to product Name / SKU. You can fix any mismatches before uploading.</div>
+            <input type="file" id="bi-file-input" multiple accept="image/*" style="display:none;">
+          </div>
+
+          <!-- SUMMARY BAR -->
+          <div id="bi-summary" style="display:none;margin-top:20px;padding:14px 18px;background:#fff;border:1px solid var(--gray-200);border-radius:4px;display:none;align-items:center;gap:20px;flex-wrap:wrap;font-size:12px;">
+            <span><strong id="bi-count-total">0</strong> files</span>
+            <span style="color:#1a8f4c;"><strong id="bi-count-matched">0</strong> matched</span>
+            <span style="color:var(--orange);"><strong id="bi-count-unmatched">0</strong> unmatched</span>
+            <span style="color:#1a8f4c;"><strong id="bi-count-done">0</strong> uploaded</span>
+            <span style="color:var(--red);"><strong id="bi-count-error">0</strong> failed</span>
+            <div style="flex:1;min-width:120px;height:6px;background:var(--gray-100);border-radius:3px;overflow:hidden;">
+              <div id="bi-progress-bar" style="height:100%;width:0%;background:var(--orange);transition:width .2s;"></div>
+            </div>
+            <span id="bi-progress-label" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);">0%</span>
+          </div>
+
+          <!-- FILE TABLE -->
+          <div class="table-wrap" id="bi-table-wrap" style="display:none;margin-top:20px;">
+            <table>
+              <thead><tr><th style="width:56px;">Preview</th><th>Filename</th><th>Matched Product</th><th style="width:90px;">Confidence</th><th style="width:110px;">Status</th><th style="width:50px;"></th></tr></thead>
+              <tbody id="bi-tbody"></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+
+
       <div id="section-orders" class="section">
         <div class="page-hdr">
           <div class="page-hdr-left">
@@ -513,20 +569,20 @@ table tr:hover td{background:var(--gray-50);}
 'use strict';
 
 /* ── CONFIG ─────────────────────────────────────────────────── */
+/* Only the public anon key belongs here — NEVER put the service_role
+   key in any file that ships to the browser. Access to orders/
+   enquiries/product-writes is enforced by RLS policies that check
+   for a signed-in Supabase Auth session (see supabase-setup.sql).
+   Create admin accounts in Supabase Dashboard → Authentication → Users. */
 const CFG = {
   supabaseUrl : 'https://nasbxjharopveynnwgrg.supabase.co',
-  /* IMPORTANT: Replace the value below with your SERVICE ROLE key.
-     Supabase → Project Settings → API → service_role (secret key)
-     The anon key cannot read orders or enquiries due to RLS.       */
   supabaseKey : 'sb_publishable_io0oLODozq0xdUJiNT37tQ_u2PWURX0',
   waNumber    : '263780793585',
   currency    : 'USD',
-  adminUser   : 'admin',
-  adminPass   : 'broc2026!',   // ← CHANGE before deploying live
 };
 
 const sb = supabase.createClient(CFG.supabaseUrl, CFG.supabaseKey, {
-  auth: { persistSession: false }
+  auth: { persistSession: true, autoRefreshToken: true }
 });
 
 /* ── MOBILE SIDEBAR ─────────────────────────────────────────── */
@@ -541,35 +597,55 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
 
-/* ── AUTH ───────────────────────────────────────────────────── */
-function adminLogin() {
-  const user = document.getElementById('adm-user').value.trim();
-  const pass = document.getElementById('adm-pass').value;
-  const err  = document.getElementById('login-err');
-  if (user === CFG.adminUser && pass === CFG.adminPass) {
-    sessionStorage.setItem('broc_admin', '1');
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-app').style.display    = 'block';
-    err.style.display = 'none';
-    refreshDashboard();
-  } else {
-    err.style.display = 'block';
-    document.getElementById('adm-pass').value = '';
-    document.getElementById('adm-pass').focus();
-  }
-}
-function adminLogout() {
-  sessionStorage.removeItem('broc_admin');
-  location.reload();
-}
-document.getElementById('adm-pass').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
-document.getElementById('adm-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('adm-pass').focus(); });
-
-if (sessionStorage.getItem('broc_admin')) {
+/* ── AUTH (real Supabase Auth session — RLS checks this server-side) ── */
+function showApp() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('admin-app').style.display    = 'block';
   refreshDashboard();
 }
+function showLogin() {
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-app').style.display    = 'none';
+}
+
+async function adminLogin() {
+  const email = document.getElementById('adm-user').value.trim();
+  const pass  = document.getElementById('adm-pass').value;
+  const err   = document.getElementById('login-err');
+  const btn   = document.getElementById('login-btn');
+  err.style.display = 'none';
+  if (!email || !pass) { return; }
+  btn.disabled = true; btn.textContent = 'Signing in…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign In →';
+  if (error || !data.session) {
+    err.textContent = 'Incorrect email or password.';
+    err.style.display = 'block';
+    document.getElementById('adm-pass').value = '';
+    document.getElementById('adm-pass').focus();
+    return;
+  }
+  showApp();
+}
+
+async function adminLogout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+document.getElementById('adm-pass').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+document.getElementById('adm-user').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('adm-pass').focus(); });
+
+/* Check for an existing session on load (handles refresh / persisted login) */
+(async () => {
+  const { data } = await sb.auth.getSession();
+  if (data.session) { showApp(); } else { showLogin(); }
+})();
+
+/* Keep the UI in sync if the session expires or the user signs out elsewhere */
+sb.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') showLogin();
+});
 
 /* ── NAVIGATION ─────────────────────────────────────────────── */
 function showSection(name) {
@@ -581,6 +657,7 @@ function showSection(name) {
   if (name === 'products')  loadProducts_Admin();
   if (name === 'orders')    loadOrders_Admin();
   if (name === 'enquiries') loadEnquiries_Admin();
+  if (name === 'bulk-images') { if (!_allProducts.length) loadProducts_Admin(); }
 }
 
 /* ── DASHBOARD ──────────────────────────────────────────────── */
@@ -673,7 +750,7 @@ function renderProductTable(products) {
       ? `<span class="badge badge-confirmed" style="margin-left:4px;" title="Shown on homepage">★ Featured</span>`
       : '';
     const thumb = p.image
-      ? `<img src="${esc(p.image)}" style="width:44px;height:44px;object-fit:cover;border:1px solid var(--gray-200);display:block;" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img src="${esc(p.image)}" alt="${esc(p.name||'Product')}" style="width:44px;height:44px;object-fit:cover;border:1px solid var(--gray-200);display:block;" loading="lazy" onerror="this.style.display='none'">`
       : `<div style="width:44px;height:44px;background:var(--gray-100);display:flex;align-items:center;justify-content:center;">
            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
          </div>`;
@@ -858,7 +935,7 @@ async function loadOrders_Admin() {
     renderOrderTable(_allOrders);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="9" class="empty-state" style="color:var(--orange);">
-      Error: ${esc(err.message)}<br><small style="opacity:.6;font-size:10px;">Replace CFG.supabaseKey with your SERVICE ROLE key to read orders.</small>
+      Error: ${esc(err.message)}
     </td></tr>`;
   }
 }
@@ -1000,7 +1077,7 @@ async function loadEnquiries_Admin() {
     renderEnquiryTable(_allEnquiries);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--orange);">
-      Error: ${esc(err.message)}<br><small style="opacity:.6;font-size:10px;">Replace CFG.supabaseKey with your SERVICE ROLE key.</small>
+      Error: ${esc(err.message)}
     </td></tr>`;
   }
 }
@@ -1131,6 +1208,255 @@ document.addEventListener('keydown', e => {
     document.getElementById('confirm-dialog')?.classList.remove('open');
   }
 });
+/* ═══════════════════════════════════════════════════════════════
+   BULK IMAGE UPLOAD
+   Matches filenames to products (by name / SKU), uploads to the
+   'product-images' Supabase Storage bucket, then writes the public
+   URL into products.image. Requires an authenticated admin session
+   (storage + product UPDATE policies are gated to `authenticated`).
+═══════════════════════════════════════════════════════════════ */
+const BI_BUCKET = 'product-images';
+let _biFiles = [];   // { uid, file, base, matchedId, matchedName, score, status, msg, previewUrl }
+let _biSeq = 0;
+
+function biNormalize(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/\.[a-z0-9]+$/i, '')       // strip extension if present
+    .replace(/[_\-.]+/g, ' ')
+    .replace(/[^a-z0-9 ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/* Score a filename's normalized text against a product. Higher = better. */
+function biScore(normFile, product) {
+  const normName = biNormalize(product.name);
+  const normSku  = biNormalize(product.sku);
+  if (normSku && normFile === normSku) return 100;
+  if (normName && normFile === normName) return 100;
+  // strip trailing variant numbers/letters e.g. "milano bar handle 2" -> "milano bar handle"
+  const stripped = normFile.replace(/\s+\d+$/, '').replace(/\s+[a-z]$/, '');
+  if (normName && stripped === normName) return 95;
+  if (normSku && (normFile.includes(normSku) || normSku.includes(normFile)) && normSku.length > 2) return 85;
+  if (normName && (normFile.includes(normName) || normName.includes(normFile)) && normName.length > 2) return 75;
+  // token overlap (Jaccard-ish)
+  const fTokens = new Set(normFile.split(' ').filter(Boolean));
+  const nTokens = new Set(normName.split(' ').filter(Boolean));
+  if (!fTokens.size || !nTokens.size) return 0;
+  let overlap = 0;
+  fTokens.forEach(t => { if (nTokens.has(t)) overlap++; });
+  const ratio = overlap / Math.max(fTokens.size, nTokens.size);
+  return Math.round(ratio * 60);
+}
+
+function biBestMatch(base) {
+  const normFile = biNormalize(base);
+  let best = null, bestScore = 0;
+  for (const p of _allProducts) {
+    const s = biScore(normFile, p);
+    if (s > bestScore) { bestScore = s; best = p; }
+  }
+  if (best && bestScore >= 50) return { id: best.id, name: best.name, score: bestScore };
+  return { id: null, name: null, score: bestScore };
+}
+
+function biInit() {
+  const zone  = document.getElementById('bi-dropzone');
+  const input = document.getElementById('bi-file-input');
+  if (!zone || zone.dataset.bound) return;
+  zone.dataset.bound = '1';
+  zone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => biAddFiles(Array.from(input.files || [])));
+  ['dragover','dragenter'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); zone.style.borderColor = 'var(--orange)'; zone.style.background = 'rgba(232,93,38,.04)';
+  }));
+  ['dragleave','drop'].forEach(evt => zone.addEventListener(evt, e => {
+    e.preventDefault(); zone.style.borderColor = 'rgba(90,90,90,.3)'; zone.style.background = '#fff';
+  }));
+  zone.addEventListener('drop', e => {
+    const files = Array.from(e.dataTransfer?.files || []).filter(f => f.type.startsWith('image/'));
+    biAddFiles(files);
+  });
+}
+
+function biAddFiles(files) {
+  if (!files.length) return;
+  if (!_allProducts.length) {
+    adminToast('Loading products list — try again in a moment.', true);
+    loadProducts_Admin();
+    return;
+  }
+  files.forEach(file => {
+    const base = file.name;
+    const match = biBestMatch(base);
+    _biFiles.push({
+      uid: ++_biSeq,
+      file,
+      base,
+      previewUrl: URL.createObjectURL(file),
+      matchedId: match.id,
+      matchedName: match.name,
+      score: match.score,
+      status: match.id ? 'matched' : 'unmatched',
+      msg: ''
+    });
+  });
+  biRender();
+}
+
+function biProductOptions(selectedId) {
+  const sorted = [..._allProducts].sort((a,b) => (a.name||'').localeCompare(b.name||''));
+  let html = '<option value="">— Unmatched —</option>';
+  sorted.forEach(p => {
+    html += `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${esc(p.name)}${p.sku ? ' ('+esc(p.sku)+')' : ''}</option>`;
+  });
+  return html;
+}
+
+function biStatusBadge(row) {
+  const map = {
+    matched:   ['#e8f5ee','#1a8f4c','Ready'],
+    unmatched: ['#fdeeea','var(--orange)','No match'],
+    uploading: ['#eef3fb','#2563eb','Uploading…'],
+    done:      ['#e8f5ee','#1a8f4c','Uploaded'],
+    error:     ['#fdeceb','var(--red)','Failed']
+  };
+  const [bg,color,label] = map[row.status] || map.unmatched;
+  return `<span style="background:${bg};color:${color};font-size:10px;font-weight:600;padding:4px 9px;border-radius:20px;letter-spacing:.3px;">${label}</span>`;
+}
+
+function biRender() {
+  const tbody = document.getElementById('bi-tbody');
+  document.getElementById('bi-table-wrap').style.display = _biFiles.length ? 'block' : 'none';
+  document.getElementById('bi-summary').style.display = _biFiles.length ? 'flex' : 'none';
+  document.getElementById('bi-upload-btn').style.display = _biFiles.length ? 'inline-flex' : 'none';
+  document.getElementById('bi-rematch-btn').style.display = _biFiles.length ? 'inline-flex' : 'none';
+
+  tbody.innerHTML = _biFiles.map(row => `
+    <tr data-uid="${row.uid}">
+      <td><img src="${row.previewUrl}" style="width:40px;height:40px;object-fit:cover;border:1px solid var(--gray-200);display:block;"></td>
+      <td style="font-size:12px;word-break:break-all;">${esc(row.base)}</td>
+      <td>
+        <select class="f-input f-select" style="width:100%;padding:6px 10px;font-size:12px;" onchange="biManualMatch(${row.uid}, this.value)">
+          ${biProductOptions(row.matchedId)}
+        </select>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${row.matchedId ? row.score + '%' : '—'}</td>
+      <td>${biStatusBadge(row)}${row.status==='error' ? `<div style="font-size:9px;color:var(--red);margin-top:3px;">${esc(row.msg)}</div>` : ''}</td>
+      <td><button class="btn btn-delete btn-sm" style="padding:5px 8px;" onclick="biRemove(${row.uid})" title="Remove" ${row.status==='uploading' ? 'disabled' : ''}>&times;</button></td>
+    </tr>
+  `).join('');
+
+  biUpdateCounts();
+}
+
+function biManualMatch(uid, productId) {
+  const row = _biFiles.find(r => r.uid === uid);
+  if (!row) return;
+  if (!productId) {
+    row.matchedId = null; row.matchedName = null; row.score = 0; row.status = 'unmatched';
+  } else {
+    const p = _allProducts.find(x => String(x.id) === String(productId));
+    row.matchedId = p.id; row.matchedName = p.name; row.score = 100; row.status = 'matched';
+  }
+  biRender();
+}
+
+function biRemove(uid) {
+  _biFiles = _biFiles.filter(r => r.uid !== uid);
+  biRender();
+}
+
+function biRematchAll() {
+  _biFiles.forEach(row => {
+    if (row.status === 'done' || row.status === 'uploading') return;
+    const match = biBestMatch(row.base);
+    row.matchedId = match.id; row.matchedName = match.name; row.score = match.score;
+    row.status = match.id ? 'matched' : 'unmatched';
+  });
+  biRender();
+}
+
+function biUpdateCounts() {
+  const total     = _biFiles.length;
+  const matched   = _biFiles.filter(r => r.status === 'matched').length;
+  const unmatched = _biFiles.filter(r => r.status === 'unmatched').length;
+  const done      = _biFiles.filter(r => r.status === 'done').length;
+  const error     = _biFiles.filter(r => r.status === 'error').length;
+  document.getElementById('bi-count-total').textContent     = total;
+  document.getElementById('bi-count-matched').textContent   = matched;
+  document.getElementById('bi-count-unmatched').textContent = unmatched;
+  document.getElementById('bi-count-done').textContent      = done;
+  document.getElementById('bi-count-error').textContent     = error;
+  const pct = total ? Math.round(((done+error) / total) * 100) : 0;
+  document.getElementById('bi-progress-bar').style.width = pct + '%';
+  document.getElementById('bi-progress-label').textContent = pct + '%';
+}
+
+function biSanitizeName(name) {
+  return name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-');
+}
+
+async function biUploadOne(row) {
+  row.status = 'uploading'; row.msg = ''; biRender();
+  try {
+    const ext = (row.file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `bulk/${Date.now()}-${row.uid}-${biSanitizeName(row.base.replace(/\.[^.]+$/, ''))}.${ext}`;
+
+    const { error: upErr } = await sb.storage.from(BI_BUCKET).upload(path, row.file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: row.file.type || undefined
+    });
+    if (upErr) throw upErr;
+
+    const { data: pub } = sb.storage.from(BI_BUCKET).getPublicUrl(path);
+    const publicUrl = pub?.publicUrl;
+    if (!publicUrl) throw new Error('Could not resolve public URL');
+
+    const { error: updErr } = await sb.from('products').update({ image: publicUrl }).eq('id', row.matchedId);
+    if (updErr) throw updErr;
+
+    // keep local product cache in sync so the Products tab reflects it without a refetch
+    const p = _allProducts.find(x => x.id === row.matchedId);
+    if (p) p.image = publicUrl;
+
+    row.status = 'done';
+  } catch (err) {
+    row.status = 'error';
+    row.msg = err.message || 'Upload failed';
+  }
+  biRender();
+}
+
+async function biStartUpload() {
+  const queue = _biFiles.filter(r => r.status === 'matched' || r.status === 'error');
+  if (!queue.length) { adminToast('No matched files ready to upload.', true); return; }
+
+  const btn = document.getElementById('bi-upload-btn');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+
+  const CONCURRENCY = 4;
+  let idx = 0;
+  async function worker() {
+    while (idx < queue.length) {
+      const row = queue[idx++];
+      await biUploadOne(row);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 3v12m0 0-4-4m4 4 4-4"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg> Upload All Matched`;
+
+  const failed = _biFiles.filter(r => r.status === 'error').length;
+  const done   = _biFiles.filter(r => r.status === 'done').length;
+  adminToast(failed ? `${done} uploaded, ${failed} failed — fix and retry.` : `${done} images uploaded successfully.`, !!failed);
+  renderProductTable(_allProducts);
+}
+
+biInit();
 </script>
 </body>
 </html>
