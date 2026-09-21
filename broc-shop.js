@@ -172,7 +172,7 @@ function buildProductCard(p) {
     <a href="product.html?id=${p.id}" class="pc-name-link" style="text-decoration:none;color:inherit;display:block;">
       <div class="pc-name">${escSH(p.name)}</div>
     </a>
-    <div class="pc-spec">${escSH(p.description || '')}</div>
+    <div class="pc-spec">${escSH(p.short_description || p.description || '')}</div>
     <div class="pc-price-row">
       <div>
         <span class="pc-price">${SHOP.currency} ${price}</span>
@@ -252,11 +252,12 @@ async function loadProducts() {
       } else {
         // featured column may not exist, or no products flagged featured yet.
         // Fall back: fetch active products and filter by badge or featured field client-side.
-        const { data: allActive, error: allErr } = await sb
+        const { data: allActive, error: allErr } = await fetchAllRows(() => sb
           .from('products')
           .select('*')
           .eq('active', true)
-          .order('name', { ascending: true });
+          .order('name', { ascending: true })
+          .order('id', { ascending: true }));
 
         if (allErr) throw allErr;
         const all = allActive || [];
@@ -337,6 +338,19 @@ const Products = {
   cache: [],
   getById(id) { return this.cache.find(p => String(p.id) === String(id)); },
 };
+
+/* Supabase returns at most 1000 rows per request — page through them all. */
+async function fetchAllRows(build) {
+  const size = 1000; let all = [], from = 0;
+  while (true) {
+    const { data, error } = await build().range(from, from + size - 1);
+    if (error) return { data: null, error };
+    all = all.concat(data || []);
+    if (!data || data.length < size) break;
+    from += size;
+  }
+  return { data: all, error: null };
+}
 
 function updateCatCounts(products) {
   document.querySelectorAll('.cat-btn[data-cat]').forEach(btn => {

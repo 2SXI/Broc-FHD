@@ -769,6 +769,19 @@ let _detailIndex  = 0;  // current product index in _filtered for prev/next
 let _detailQty    = 1;
 
 /* ── LOAD PRODUCTS FROM SUPABASE ────────────────────────────── */
+/* Supabase returns at most 1000 rows per request — page through them all. */
+async function fetchAllRows(build) {
+  const size = 1000; let all = [], from = 0;
+  while (true) {
+    const { data, error } = await build().range(from, from + size - 1);
+    if (error) return { data: null, error };
+    all = all.concat(data || []);
+    if (!data || data.length < size) break;
+    from += size;
+  }
+  return { data: all, error: null };
+}
+
 async function loadCatalogue() {
   renderSkeletons(12);
   try {
@@ -776,10 +789,10 @@ async function loadCatalogue() {
     let data, error;
     if (sb) {
       // Try with active filter first; fallback if column doesn't exist
-      let result = await sb.from('products').select('*').eq('active', true).order('name', { ascending: true });
+      let result = await fetchAllRows(() => sb.from('products').select('*').eq('active', true).order('name', { ascending: true }).order('id', { ascending: true }));
       if (result.error && result.error.message.includes('active')) {
         // active column doesn't exist yet — fetch all
-        result = await sb.from('products').select('*').order('name', { ascending: true });
+        result = await fetchAllRows(() => sb.from('products').select('*').order('name', { ascending: true }).order('id', { ascending: true }));
         if (result.error) throw result.error;
         data = (result.data || []).filter(p => p.active !== false);
       } else {
@@ -844,7 +857,7 @@ function applyFilters() {
     if (_activeBadge && badge !== _activeBadge) return false;
     // Search
     if (q) {
-      const haystack = `${p.name} ${p.sku || ''} ${p.category || ''} ${p.description || ''}`.toLowerCase();
+      const haystack = `${p.name} ${p.sku || ''} ${p.category || ''} ${p.short_description || ''} ${p.description || ''}`.toLowerCase();
       if (!haystack.includes(q)) return false;
     }
     return true;
@@ -910,7 +923,7 @@ function buildCatalogueCard(p, index) {
       <div class="pc-body" style="pointer-events:none;">
         <div class="pc-sku">SKU: ${_esc(p.sku || 'BRC-' + p.id)}</div>
         <div class="pc-name">${_esc(p.name)}</div>
-        <div class="pc-spec">${_esc(p.description || '')}</div>
+        <div class="pc-spec">${_esc(p.short_description || p.description || '')}</div>
         <div class="pc-price-row">
           <div>
             <span class="pc-price">${CAT_CUR} ${price}</span>
@@ -989,7 +1002,7 @@ function renderDetail(p, index) {
       ${oldPrice ? `<span class="pdm-old-price">${CAT_CUR} ${oldPrice.toFixed(2)}</span>` : ''}
       ${saveAmt  ? `<span class="pdm-save">Save ${saveAmt}%</span>` : ''}
     </div>
-    ${p.description ? `<div class="pdm-desc">${_esc(p.description)}</div>` : ''}
+    ${(p.description || p.short_description) ? `<div class="pdm-desc">${_esc(p.description || p.short_description)}</div>` : ''}
     ${specsHtml}
     <div class="pdm-actions">
       <div class="pdm-qty-row">

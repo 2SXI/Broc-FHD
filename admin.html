@@ -472,7 +472,11 @@ table tr:hover td{background:var(--gray-50);}
         </div>
       </div>
       <div class="f-group">
-        <label class="f-label">Description / Specs</label>
+        <label class="f-label">Short description <span style="font-weight:400;opacity:.6;">(one line, shown on product tiles)</span></label>
+        <input id="pm-short-description" class="f-input" type="text" maxlength="60" placeholder="e.g. Cabinet handle, 12 x 128mm">
+      </div>
+      <div class="f-group">
+        <label class="f-label">Full description <span style="font-weight:400;opacity:.6;">(shown on the product page)</span></label>
         <textarea id="pm-description" class="f-input" style="resize:vertical;min-height:72px;" placeholder="e.g. 128mm centres &middot; 304 SS &middot; Matt finish"></textarea>
       </div>
       <div class="f-row">
@@ -718,11 +722,24 @@ async function refreshDashboard() {
 /* ── PRODUCTS ───────────────────────────────────────────────── */
 let _allProducts = [];
 
+/* Supabase returns at most 1000 rows per request — page through them all. */
+async function fetchAllRows(build) {
+  const size = 1000; let all = [], from = 0;
+  while (true) {
+    const { data, error } = await build().range(from, from + size - 1);
+    if (error) return { data: null, error };
+    all = all.concat(data || []);
+    if (!data || data.length < size) break;
+    from += size;
+  }
+  return { data: all, error: null };
+}
+
 async function loadProducts_Admin() {
   const tbody = document.getElementById('products-tbody');
   tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
   try {
-    const { data, error } = await sb.from('products').select('*').order('name', { ascending: true });
+    const { data, error } = await fetchAllRows(() => sb.from('products').select('*').order('name', { ascending: true }).order('id', { ascending: true }));
     if (error) throw error;
     _allProducts = data || [];
     renderProductTable(_allProducts);
@@ -822,6 +839,7 @@ function openProductModal(id) {
     document.getElementById('pm-category').value    = p.category    || '';
     document.getElementById('pm-stock').value       = (p.stock !== null && p.stock !== undefined) ? p.stock : '';
     document.getElementById('pm-image').value       = p.image       || '';
+    document.getElementById('pm-short-description').value = p.short_description || '';
     document.getElementById('pm-description').value = p.description || '';
     document.getElementById('pm-badge').value       = p.badge       || '';
     const chk = document.getElementById('pm-active');
@@ -838,7 +856,7 @@ function openProductModal(id) {
 function closeProductModal() { document.getElementById('product-modal').classList.remove('open'); }
 
 function clearProductForm() {
-  ['pm-id','pm-name','pm-sku','pm-price','pm-old-price','pm-stock','pm-image','pm-description'].forEach(id => {
+  ['pm-id','pm-name','pm-sku','pm-price','pm-old-price','pm-stock','pm-image','pm-short-description','pm-description'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   document.getElementById('pm-category').value = '';
@@ -878,6 +896,7 @@ async function saveProduct() {
     old_price   : oldPriceRaw ? parseFloat(oldPriceRaw) : null,
     stock       : stockRaw !== '' ? parseInt(stockRaw, 10) : 0,
     image       : document.getElementById('pm-image').value.trim()       || null,
+    short_description : document.getElementById('pm-short-description').value.trim() || null,
     description : document.getElementById('pm-description').value.trim() || null,
     badge       : document.getElementById('pm-badge').value              || null,
   };
@@ -1229,33 +1248,40 @@ function biNormalize(str) {
     .trim();
 }
 
+/* Pre-compute normalised names/SKUs ONCE (was recomputed for every product on every file). */
+let _biIndex = null, _biIndexSrc = null, _biIndexLen = -1, _biOptionsHtml = null;
+function biBuildIndex() {
+  if (_biIndex && _biIndexSrc === _allProducts && _biIndexLen === _allProducts.length) return;
+  _biIndex = _allProducts.map(p => {
+    const name = biNormalize(p.name);
+    return { p, name, sku: biNormalize(p.sku), tokens: new Set(name.split(' ').filter(Boolean)) };
+  });
+  _biIndexSrc = _allProducts; _biIndexLen = _allProducts.length; _biOptionsHtml = null;
+}
+
 /* Score a filename's normalized text against a product. Higher = better. */
-function biScore(normFile, product) {
-  const normName = biNormalize(product.name);
-  const normSku  = biNormalize(product.sku);
+function biScore(normFile, ix) {
+  const normName = ix.name, normSku = ix.sku;
   if (normSku && normFile === normSku) return 100;
   if (normName && normFile === normName) return 100;
-  // strip trailing variant numbers/letters e.g. "milano bar handle 2" -> "milano bar handle"
   const stripped = normFile.replace(/\s+\d+$/, '').replace(/\s+[a-z]$/, '');
   if (normName && stripped === normName) return 95;
   if (normSku && (normFile.includes(normSku) || normSku.includes(normFile)) && normSku.length > 2) return 85;
   if (normName && (normFile.includes(normName) || normName.includes(normFile)) && normName.length > 2) return 75;
-  // token overlap (Jaccard-ish)
   const fTokens = new Set(normFile.split(' ').filter(Boolean));
-  const nTokens = new Set(normName.split(' ').filter(Boolean));
-  if (!fTokens.size || !nTokens.size) return 0;
+  if (!fTokens.size || !ix.tokens.size) return 0;
   let overlap = 0;
-  fTokens.forEach(t => { if (nTokens.has(t)) overlap++; });
-  const ratio = overlap / Math.max(fTokens.size, nTokens.size);
-  return Math.round(ratio * 60);
+  fTokens.forEach(t => { if (ix.tokens.has(t)) overlap++; });
+  return Math.round((overlap / Math.max(fTokens.size, ix.tokens.size)) * 60);
 }
 
 function biBestMatch(base) {
+  biBuildIndex();
   const normFile = biNormalize(base);
   let best = null, bestScore = 0;
-  for (const p of _allProducts) {
-    const s = biScore(normFile, p);
-    if (s > bestScore) { bestScore = s; best = p; }
+  for (const ix of _biIndex) {
+    const sc = biScore(normFile, ix);
+    if (sc > bestScore) { bestScore = sc; best = ix.p; if (sc === 100) break; }
   }
   if (best && bestScore >= 50) return { id: best.id, name: best.name, score: bestScore };
   return { id: null, name: null, score: bestScore };
@@ -1267,7 +1293,7 @@ function biInit() {
   if (!zone || zone.dataset.bound) return;
   zone.dataset.bound = '1';
   zone.addEventListener('click', () => input.click());
-  input.addEventListener('change', () => biAddFiles(Array.from(input.files || [])));
+  input.addEventListener('change', () => { const f = Array.from(input.files || []); input.value = ''; biAddFiles(f); });
   ['dragover','dragenter'].forEach(evt => zone.addEventListener(evt, e => {
     e.preventDefault(); zone.style.borderColor = 'var(--orange)'; zone.style.background = 'rgba(232,93,38,.04)';
   }));
@@ -1280,38 +1306,52 @@ function biInit() {
   });
 }
 
-function biAddFiles(files) {
+async function biAddFiles(files) {
   if (!files.length) return;
   if (!_allProducts.length) {
     adminToast('Loading products list — try again in a moment.', true);
     loadProducts_Admin();
     return;
   }
-  files.forEach(file => {
-    const base = file.name;
-    const match = biBestMatch(base);
-    _biFiles.push({
-      uid: ++_biSeq,
-      file,
-      base,
-      previewUrl: URL.createObjectURL(file),
-      matchedId: match.id,
-      matchedName: match.name,
-      score: match.score,
-      status: match.id ? 'matched' : 'unmatched',
-      msg: ''
+  biBuildIndex();
+  const seen = new Set(_biFiles.map(r => r.file.name + '|' + r.file.size));
+  const fresh = files.filter(f => !seen.has(f.name + '|' + f.size));
+  const CHUNK = 40;
+  for (let i = 0; i < fresh.length; i += CHUNK) {
+    fresh.slice(i, i + CHUNK).forEach(file => {
+      const match = biBestMatch(file.name);
+      _biFiles.push({
+        uid: ++_biSeq, file, base: file.name,
+        previewUrl: URL.createObjectURL(file),
+        matchedId: match.id, matchedName: match.name, score: match.score,
+        status: match.id ? 'matched' : 'unmatched', msg: ''
+      });
     });
-  });
+    adminToast(`Matching images… ${Math.min(i + CHUNK, fresh.length)} / ${fresh.length}`);
+    await new Promise(r => setTimeout(r, 0));   // let the browser breathe
+  }
   biRender();
 }
 
-function biProductOptions(selectedId) {
+/* Full product list for the dropdown is built once and only injected when a row's dropdown is opened. */
+function biAllOptionsHtml() {
+  if (_biOptionsHtml) return _biOptionsHtml;
   const sorted = [..._allProducts].sort((a,b) => (a.name||'').localeCompare(b.name||''));
   let html = '<option value="">— Unmatched —</option>';
-  sorted.forEach(p => {
-    html += `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${esc(p.name)}${p.sku ? ' ('+esc(p.sku)+')' : ''}</option>`;
-  });
-  return html;
+  sorted.forEach(p => { html += `<option value="${p.id}">${esc(p.name)}${p.sku ? ' ('+esc(p.sku)+')' : ''}</option>`; });
+  return (_biOptionsHtml = html);
+}
+function biFillOptions(sel) {
+  if (sel.dataset.full) return;
+  sel.dataset.full = '1';
+  const cur = sel.value;
+  sel.innerHTML = biAllOptionsHtml();
+  sel.value = cur;
+}
+function biSelectStub(row) {
+  return row.matchedId
+    ? `<option value="${row.matchedId}" selected>${esc(row.matchedName)}</option>`
+    : '<option value="" selected>— Unmatched —</option>';
 }
 
 function biStatusBadge(row) {
@@ -1326,28 +1366,43 @@ function biStatusBadge(row) {
   return `<span style="background:${bg};color:${color};font-size:10px;font-weight:600;padding:4px 9px;border-radius:20px;letter-spacing:.3px;">${label}</span>`;
 }
 
+function biRowHtml(row) {
+  return `
+    <tr data-uid="${row.uid}">
+      <td><img src="${row.previewUrl}" loading="lazy" decoding="async" style="width:40px;height:40px;object-fit:cover;border:1px solid var(--gray-200);display:block;"></td>
+      <td style="font-size:12px;word-break:break-all;">${esc(row.base)}</td>
+      <td>
+        <select class="f-input f-select" style="width:100%;padding:6px 10px;font-size:12px;" onfocus="biFillOptions(this)" onmousedown="biFillOptions(this)" onchange="biManualMatch(${row.uid}, this.value)">
+          ${biSelectStub(row)}
+        </select>
+      </td>
+      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${row.matchedId ? row.score + '%' : '—'}</td>
+      <td>${biStatusCell(row)}</td>
+      <td><button class="btn btn-delete btn-sm" style="padding:5px 8px;" onclick="biRemove(${row.uid})" title="Remove" ${row.status==='uploading' ? 'disabled' : ''}>&times;</button></td>
+    </tr>`;
+}
+function biStatusCell(row) {
+  return biStatusBadge(row) + (row.status==='error' ? `<div style="font-size:9px;color:var(--red);margin-top:3px;">${esc(row.msg)}</div>` : '');
+}
+
 function biRender() {
   const tbody = document.getElementById('bi-tbody');
   document.getElementById('bi-table-wrap').style.display = _biFiles.length ? 'block' : 'none';
   document.getElementById('bi-summary').style.display = _biFiles.length ? 'flex' : 'none';
   document.getElementById('bi-upload-btn').style.display = _biFiles.length ? 'inline-flex' : 'none';
   document.getElementById('bi-rematch-btn').style.display = _biFiles.length ? 'inline-flex' : 'none';
+  tbody.innerHTML = _biFiles.map(biRowHtml).join('');
+  biUpdateCounts();
+}
 
-  tbody.innerHTML = _biFiles.map(row => `
-    <tr data-uid="${row.uid}">
-      <td><img src="${row.previewUrl}" style="width:40px;height:40px;object-fit:cover;border:1px solid var(--gray-200);display:block;"></td>
-      <td style="font-size:12px;word-break:break-all;">${esc(row.base)}</td>
-      <td>
-        <select class="f-input f-select" style="width:100%;padding:6px 10px;font-size:12px;" onchange="biManualMatch(${row.uid}, this.value)">
-          ${biProductOptions(row.matchedId)}
-        </select>
-      </td>
-      <td style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);">${row.matchedId ? row.score + '%' : '—'}</td>
-      <td>${biStatusBadge(row)}${row.status==='error' ? `<div style="font-size:9px;color:var(--red);margin-top:3px;">${esc(row.msg)}</div>` : ''}</td>
-      <td><button class="btn btn-delete btn-sm" style="padding:5px 8px;" onclick="biRemove(${row.uid})" title="Remove" ${row.status==='uploading' ? 'disabled' : ''}>&times;</button></td>
-    </tr>
-  `).join('');
-
+/* During an upload only touch the one row that changed — never rebuild the whole table. */
+function biRefreshRow(row) {
+  const tr = document.querySelector(`#bi-tbody tr[data-uid="${row.uid}"]`);
+  if (tr) {
+    tr.children[4].innerHTML = biStatusCell(row);
+    const btn = tr.children[5].querySelector('button');
+    if (btn) btn.disabled = row.status === 'uploading';
+  }
   biUpdateCounts();
 }
 
@@ -1360,10 +1415,13 @@ function biManualMatch(uid, productId) {
     const p = _allProducts.find(x => String(x.id) === String(productId));
     row.matchedId = p.id; row.matchedName = p.name; row.score = 100; row.status = 'matched';
   }
-  biRender();
+  const tr = document.querySelector(`#bi-tbody tr[data-uid="${uid}"]`);
+  if (tr) { tr.outerHTML = biRowHtml(row); biUpdateCounts(); } else { biRender(); }
 }
 
 function biRemove(uid) {
+  const gone = _biFiles.find(r => r.uid === uid);
+  if (gone) URL.revokeObjectURL(gone.previewUrl);
   _biFiles = _biFiles.filter(r => r.uid !== uid);
   biRender();
 }
@@ -1398,16 +1456,43 @@ function biSanitizeName(name) {
   return name.toLowerCase().replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-');
 }
 
-async function biUploadOne(row) {
-  row.status = 'uploading'; row.msg = ''; biRender();
+/* Shrink big photos before upload: max 1400px, WebP ~85%. A 4 MB camera photo becomes ~100-200 KB. */
+async function biPrepare(file) {
+  const origExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const original = { blob: file, ext: origExt, type: file.type || undefined };
   try {
-    const ext = (row.file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = `bulk/${Date.now()}-${row.uid}-${biSanitizeName(row.base.replace(/\.[^.]+$/, ''))}.${ext}`;
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return original;
+    const MAX = 1400;
+    const bmp = await createImageBitmap(file);
+    const scale = Math.min(1, MAX / Math.max(bmp.width, bmp.height));
+    if (scale === 1 && file.size < 300 * 1024) { bmp.close && bmp.close(); return original; }
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close && bmp.close();
+    let blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.85));
+    if (!blob || blob.type !== 'image/webp') {            // browser can't encode WebP → JPEG on white
+      ctx.globalCompositeOperation = 'destination-over';
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+      blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
+    }
+    c.width = c.height = 0;
+    if (!blob || blob.size >= file.size) return original;
+    return { blob, ext: blob.type === 'image/webp' ? 'webp' : 'jpg', type: blob.type };
+  } catch (_e) { return original; }
+}
 
-    const { error: upErr } = await sb.storage.from(BI_BUCKET).upload(path, row.file, {
-      cacheControl: '3600',
+async function biUploadOne(row) {
+  row.status = 'uploading'; row.msg = ''; biRefreshRow(row);
+  try {
+    const prep = await biPrepare(row.file);
+    const path = `bulk/${Date.now()}-${row.uid}-${biSanitizeName(row.base.replace(/\.[^.]+$/, ''))}.${prep.ext}`;
+
+    const { error: upErr } = await sb.storage.from(BI_BUCKET).upload(path, prep.blob, {
+      cacheControl: '31536000',
       upsert: false,
-      contentType: row.file.type || undefined
+      contentType: prep.type
     });
     if (upErr) throw upErr;
 
@@ -1418,7 +1503,6 @@ async function biUploadOne(row) {
     const { error: updErr } = await sb.from('products').update({ image: publicUrl }).eq('id', row.matchedId);
     if (updErr) throw updErr;
 
-    // keep local product cache in sync so the Products tab reflects it without a refetch
     const p = _allProducts.find(x => x.id === row.matchedId);
     if (p) p.image = publicUrl;
 
@@ -1427,7 +1511,7 @@ async function biUploadOne(row) {
     row.status = 'error';
     row.msg = err.message || 'Upload failed';
   }
-  biRender();
+  biRefreshRow(row);
 }
 
 async function biStartUpload() {
@@ -1435,16 +1519,19 @@ async function biStartUpload() {
   if (!queue.length) { adminToast('No matched files ready to upload.', true); return; }
 
   const btn = document.getElementById('bi-upload-btn');
-  btn.disabled = true; btn.textContent = 'Uploading…';
+  btn.disabled = true;
 
-  const CONCURRENCY = 4;
-  let idx = 0;
+  const CONCURRENCY = 5;
+  let idx = 0, finished = 0;
   async function worker() {
     while (idx < queue.length) {
       const row = queue[idx++];
       await biUploadOne(row);
+      finished++;
+      btn.textContent = `Uploading ${finished} / ${queue.length}…`;
     }
   }
+  btn.textContent = `Uploading 0 / ${queue.length}…`;
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, queue.length) }, worker));
 
   btn.disabled = false;

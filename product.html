@@ -620,7 +620,7 @@ function renderProduct(p) {
           ${oldPrice ? `<span class="pp-old-price">${PP_CUR} ${oldPrice.toFixed(2)}</span>` : ''}
           ${saveAmt  ? `<span class="pp-save">Save ${saveAmt}%</span>` : ''}
         </div>
-        ${p.description ? `<div class="pp-desc">${esc(p.description)}</div>` : ''}
+        ${(p.description || p.short_description) ? `<div class="pp-desc">${esc(p.description || p.short_description)}</div>` : ''}
         ${specsHtml}
         <div class="pp-actions">
           <div class="pp-qty-row">
